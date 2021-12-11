@@ -12,7 +12,6 @@ public class CodiceFiscale {
     public CodiceFiscale() {}
 
     public CodiceFiscale(String nome, String cognome, int anno, int mese, int giorno, String sesso) {
-        this.mese = mese;
         this.nome = nome;
         this.cognome = cognome;
         this.anno = anno;
@@ -22,16 +21,20 @@ public class CodiceFiscale {
     }
 
     public static String getConsonanti(String s) {
-        return s.replaceAll("[aeiou]","").toUpperCase();
+        return s.toLowerCase().replaceAll("[aeiou]","").toUpperCase();
     }
 
     public static String getVocali(String s){
-        return s.replaceAll("[^aeiou]","").toUpperCase();
+        return s.toLowerCase().replaceAll("[^aeiou]","").toUpperCase();
     }
 
 
-    private String getSiglaNome(String nome){
-        String consonanti = getConsonanti(nome);
+    private String getSiglaNome(String nome,String mode){
+        StringBuilder consonantiBuilder = new StringBuilder(getConsonanti(nome));
+        if(mode.equals("nome")&&consonantiBuilder.length()>3){
+            consonantiBuilder.deleteCharAt(1);
+        }
+        String consonanti = consonantiBuilder.toString();
         String vocali = getVocali(nome);
         char[] res = new char[3];
         int vocali_usate = 0;
@@ -55,22 +58,21 @@ public class CodiceFiscale {
     }
 
     public String getMese(){
-        String r="";
-        switch(mese){
-            case 1 : r="A"; break;
-            case 2 : r="B"; break;
-            case 3 : r="C"; break;
-            case 4 : r="D"; break;
-            case 5 : r="E"; break;
-            case 6 : r="H"; break;
-            case 7 : r="L"; break;
-            case 8 : r="M"; break;
-            case 9 : r="P"; break;
-            case 10 : r="R"; break;
-            case 11 : r="S"; break;
-            case 12 : r="T"; break;
-        }
-        return r;
+        return switch (mese) {
+            case 1 -> "A";
+            case 2 -> "B";
+            case 3 -> "C";
+            case 4 -> "D";
+            case 5 -> "E";
+            case 6 -> "H";
+            case 7 -> "L";
+            case 8 -> "M";
+            case 9 -> "P";
+            case 10 -> "R";
+            case 11 -> "S";
+            case 12 -> "T";
+            default -> "";
+        };
     }
 
     public void setNome(String nome) {
@@ -105,9 +107,8 @@ public class CodiceFiscale {
         return String.format("%02d", r);
     }
 
-
     public String getCodice() {
-        return getSiglaNome(cognome)+getSiglaNome(nome)+getAnno()+getMese()+getGiorno();
+        return getSiglaNome(cognome,"cognome")+getSiglaNome(nome,"nome")+getAnno()+getMese()+getGiorno();
     }
 
 }
