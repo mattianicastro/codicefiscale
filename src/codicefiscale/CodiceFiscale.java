@@ -1,6 +1,12 @@
 package codicefiscale;
 
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 public class CodiceFiscale {
     private String nome;
     private String cognome;
@@ -8,16 +14,12 @@ public class CodiceFiscale {
     private int mese;
     private int giorno;
     private String sesso;
+    private String comune;
+    private final Map<String, Map<String, String>> values = new HashMap<>();
+    private final StringBuilder result = new StringBuilder();
 
-    public CodiceFiscale() {}
-
-    public CodiceFiscale(String nome, String cognome, int anno, int mese, int giorno, String sesso) {
-        this.nome = nome;
-        this.cognome = cognome;
-        this.anno = anno;
-        this.mese = mese;
-        this.giorno = giorno;
-        this.sesso = sesso;
+    public CodiceFiscale() throws IOException {
+        loadResources();
     }
 
     public static String getConsonanti(String s) {
@@ -29,7 +31,7 @@ public class CodiceFiscale {
     }
 
 
-    private String getSiglaNome(String nome,String mode){
+    private void buildSigla(String nome, String mode){
         StringBuilder consonantiBuilder = new StringBuilder(getConsonanti(nome));
         if(mode.equals("nome")&&consonantiBuilder.length()>3){
             consonantiBuilder.deleteCharAt(1);
@@ -49,16 +51,17 @@ public class CodiceFiscale {
             }
 
         }
-        return new String(res);
+        result.append(res);
     }
 
-    public String getAnno() {
+    private void buildAnno() {
         String a = Integer.toString(anno);
-        return a.substring(a.length()-2);
+        result.append(a.substring(a.length()-2));
+
     }
 
-    public String getMese(){
-        return switch (mese) {
+    private void buildMese(){
+        String r = switch (mese) {
             case 1 -> "A";
             case 2 -> "B";
             case 3 -> "C";
@@ -71,8 +74,67 @@ public class CodiceFiscale {
             case 10 -> "R";
             case 11 -> "S";
             case 12 -> "T";
-            default -> "";
+            default -> throw new Error("Mese non trovato");
         };
+        result.append(r);
+    }
+    public void buildGiorno() {
+        int r = giorno;
+        if (sesso.equals("F")) {
+            r = giorno + 40;
+        }
+        result.append(String.format("%02d", r));
+    }
+
+    public boolean checkComune(){
+        if(comune==null){
+            return false;
+        }
+        Map<String, String> comuni = values.get("lista-codici.txt");
+        String value = comuni.get(comune.toUpperCase());
+        return value != null;
+    }
+
+    private void loadResources() throws IOException {
+        String[] files = new String[]{"lista-codici.txt","controllo-dispari.txt","controllo-pari.txt","controllo-resto.txt"};
+        for (String file : files) {
+            Map<String, String> tmp = new HashMap<>();
+            FileReader fr = new FileReader(file);
+            BufferedReader reader = new BufferedReader(fr);
+            boolean eof = false;
+            while (!eof) {
+                String c = reader.readLine();
+                if (c == null) {
+                    values.put(file, tmp);
+                    eof = true;
+                } else {
+                    String[] parti = c.split(";");
+                    tmp.put(parti[0], parti[1]);
+                }
+            }
+
+        }
+
+    }
+    private void buildComune() {
+        Map<String, String> comuni = values.get("lista-codici.txt");
+        String code = comuni.get(comune.toUpperCase());
+        result.append(code);
+    }
+
+    private void buildCodiceControllo() {
+        Map<String, String> dispari = values.get("controllo-dispari.txt");
+        Map<String, String> pari = values.get("controllo-pari.txt");
+        Map<String, String> resto = values.get("controllo-resto.txt");
+        int somma = 0;
+        for(int i=1; i<=result.length(); i++){
+            if(i%2==0){
+                somma += Integer.parseInt(pari.get(String.valueOf(result.charAt(i-1))));
+            }else{
+                somma += Integer.parseInt(dispari.get(String.valueOf(result.charAt(i-1))));
+            }
+        }
+        result.append(resto.get(Integer.toString(somma%26)));
     }
 
     public void setNome(String nome) {
@@ -99,16 +161,19 @@ public class CodiceFiscale {
         this.sesso = sesso;
     }
 
-    public String getGiorno() {
-        int r = giorno;
-        if (sesso.equals("F")) {
-            r = giorno + 40;
-        }
-        return String.format("%02d", r);
+    public void setComune(String comune) {
+        this.comune = comune;
     }
 
     public String getCodice() {
-        return getSiglaNome(cognome,"cognome")+getSiglaNome(nome,"nome")+getAnno()+getMese()+getGiorno();
+        buildSigla(cognome, "cognome");
+        buildSigla(nome, "nome");
+        buildAnno();
+        buildMese();
+        buildGiorno();
+        buildComune();
+        buildCodiceControllo();
+        return new String(result);
     }
 
 }
