@@ -138,11 +138,11 @@ public class CodiceFiscale {
     }
 
     public void setNome(String nome) {
-        this.nome = nome;
+        this.nome = nome.replace(" ","");
     }
 
     public void setCognome(String cognome) {
-        this.cognome = cognome;
+        this.cognome = cognome.replace(" ","");
     }
 
     public void setAnno(int anno) {
